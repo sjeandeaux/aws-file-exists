@@ -1,3 +1,5 @@
+use aws_sdk_s3::output::GetObjectOutput;
+use aws_sdk_s3::error::GetObjectError;
 use aws_sdk_s3::{Client, Error, SdkError};
 
 use structopt::StructOpt;
@@ -31,27 +33,31 @@ async fn main() -> Result<(), Error> {
         for line in lines {
             if let Ok(file_key) = line {
                 let resp = client.get_object().bucket(&bucket).key(&file_key).send().await;
-                match resp {
-                    Ok(_b) => {
-                        println!("{},yes", file_key);
-                    }
-                    Err(e) => {
-                        match e {
-                            SdkError::ServiceError{raw: _, err: _} => {
-                                println!("{},no", file_key);
-                            },
-                            _ => {
-                                println!("{},no", e);
-                            },
-                        }
-                    }
-                }
+                print_result(file_key, resp)
             }
         }
     }
 
 
     Ok(())
+}
+
+fn print_result(file_key: String, resp: Result<GetObjectOutput, SdkError<GetObjectError>>){
+    match resp {
+        Ok(_b) => {
+            println!("{},yes", file_key);
+        }
+        Err(e) => {
+            match e {
+                SdkError::ServiceError{raw: _, err: _} => {
+                    println!("{},no", file_key);
+                },
+                _ => {
+                    println!("{},no", e);
+                },
+            }
+        }
+    }
 }
 
 // The output is wrapped in a Result to allow matching on errors
